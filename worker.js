@@ -12,12 +12,12 @@ export default {
         return new Response("OK");
       }
 
-      // Hapus tag @username di grup biar AI nggak bingung
+      // Hapus tag @username
       if (body.message.entities) {
           userText = userText.replace(/@\w+/g, '').trim();
       }
 
-      // Kasih respon "typing..." di Telegram
+      // Kasih respon "typing..."
       await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendChatAction`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ chat_id: chatId, action: "typing" })
