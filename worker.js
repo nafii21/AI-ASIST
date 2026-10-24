@@ -8,7 +8,7 @@ export default {
       const chatId = body.message.chat.id;
       for (const member of body.message.new_chat_members) {
         if (!member.is_bot) {
-          const welcomeText = `Halo <b>${member.first_name || "Bro"}</b>! 👋\n\nSelamat datang. Saya <b>Jack</b>, Asisten AI. 🤖📈\n\nBisa tag saya buat ngobrol, atau kirim gambar chart (sambil tag saya) buat dianalisa!`;
+          const welcomeText = `Halo <b>${member.first_name || "Bro"}</b>! 👋\n\nSelamat datang. Saya <b>Jack</b>, Asisten AI. 🤖📈\n\nTag saya buat ngobrol, atau kirim gambar chart (sambil tag saya) buat dianalisa!`;
           await sendTelegram(env.TELEGRAM_BOT_TOKEN, chatId, welcomeText);
         }
       }
@@ -23,13 +23,10 @@ export default {
       
       let userText = body.message.text || body.message.caption || "";
       let imageFileId = null;
-
-      // Cek apakah user nge-reply pesan (mungkin nge-reply gambar)
       let repliedMessage = body.message.reply_to_message;
       
       // Cek apakah ada gambar di pesan yang dikirim LANGSUNG
       if (body.message.photo) {
-          // Ambil resolusi gambar paling tinggi
           imageFileId = body.message.photo[body.message.photo.length - 1].file_id;
       } 
       // Cek apakah ada gambar di pesan yang DI-REPLY
@@ -37,14 +34,14 @@ export default {
           imageFileId = repliedMessage.photo[repliedMessage.photo.length - 1].file_id;
       }
 
-      // Abaikan bot lain
+      // Abaikan pesan dari bot lain
       if (body.message.from && body.message.from.is_bot) return new Response("OK");
 
-      // Pengecekan Tag / Reply
+      // Cek Tag / Reply
       const isTagged = userText.toLowerCase().includes(`@${botUsername.toLowerCase()}`);
       const isReplyToBot = repliedMessage && repliedMessage.from.username === botUsername;
 
-      // Jack cuma jawab kalau di-tag, nge-reply Jack, ATAU ngirim gambar
+      // Jack cuma jawab kalau di-tag, nge-reply Jack, ATAU ada gambar chart
       if (!isTagged && !isReplyToBot && !imageFileId) return new Response("OK");
 
       // Bersihin teks dari tag
@@ -76,7 +73,7 @@ export default {
             repliedContext = `User me-reply pesan ini: "${repliedMessage.text}"`;
         }
 
-        const systemPrompt = `Kamu adalah Jack, asisten trading AI di grup Telegram. Kepribadianmu: Santai, asik, gaul, cerdas.
+        const systemPrompt = `Kamu adalah Jack, asisten trading AI di grup Telegram. Santai, asik, gaul, cerdas.
         
         KONTEKS:
         1. ${repliedContext}
@@ -91,7 +88,8 @@ export default {
 
         // --- LOGIKA JIKA ADA GAMBAR (VISION) ---
         if (imageFileId) {
-            groqModel = "meta-llama/llama-4-scout-17b-16e-instruct"; // Model Vision Gratis Groq
+            // PAKAI MODEL VISION RESMI DARI GROQ
+            groqModel = "llama-3.2-11b-vision-preview"; 
             
             // 1. Dapetin URL file dari Telegram
             const fileRes = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/getFile?file_id=${imageFileId}`);
@@ -144,7 +142,7 @@ export default {
             model: groqModel, 
             messages: groqMessages,
             temperature: 0.6,
-            max_tokens: 1024 // Batasi output biar ga kepanjangan
+            max_tokens: 1024 
           })
         });
 
