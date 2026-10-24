@@ -3,20 +3,17 @@ export default {
     if (request.method !== "POST") return new Response("OK");
     const body = await request.json();
 
-    // Cek apakah ada pesan teks masuk
     if (body.message && body.message.text) {
       const chatId = body.message.chat.id;
       let userText = body.message.text;
 
-      // Abaikan command /start atau /help
       if (userText.startsWith("/")) {
         await sendTelegram(env.TELEGRAM_BOT_TOKEN, chatId, "Halo bro! Gw asisten AI lo. Tanya apa aja langsung di grup ini.");
         return new Response("OK");
       }
 
-      // Di grup, pesan biasanya ada @NamaBot. Kita hapus biar AI nggak bingung.
+      // Hapus tag @username di grup biar AI nggak bingung
       if (body.message.entities) {
-          // Potong teks setelah @username jika ada
           userText = userText.replace(/@\w+/g, '').trim();
       }
 
@@ -26,8 +23,11 @@ export default {
         body: JSON.stringify({ chat_id: chatId, action: "typing" })
       });
 
-      // Tembak Groq API
       try {
+        if (!env.GROQ_API_KEY) {
+            throw new Error("GROQ_API_KEY belum diisi di Cloudflare Settings!");
+        }
+
         const groqResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
           method: "POST",
           headers: {
@@ -35,7 +35,8 @@ export default {
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
-            model: "llama-3.3-70b-versatile", // Model gratis Groq yang pinter
+            // --- GANTI MODEL KE GPT-OSS-120B ---
+            model: "openai/gpt-oss-120b", 
             messages: [
               { role: "system", content: "Kamu adalah asisten AI yang cerdas, santai, dan menjawab pakai bahasa Indonesia gaul. Jawab dengan singkat, padat, dan jelas." },
               { role: "user", content: userText }
@@ -46,16 +47,20 @@ export default {
 
         const groqData = await groqResponse.json();
         
-        // Ambil jawaban AI
+        // Kalau Groq nolak, tampilin errornya
+        if (!groqResponse.ok) {
+            throw new Error(`Groq API Error: ${JSON.stringify(groqData.error || groqData)}`);
+        }
+
         if (groqData.choices && groqData.choices.length > 0) {
           const replyText = groqData.choices[0].message.content;
           await sendTelegram(env.TELEGRAM_BOT_TOKEN, chatId, replyText);
         } else {
-          await sendTelegram(env.TELEGRAM_BOT_TOKEN, chatId, "❌ Maaf bro, AI-nya lagi pusing. Coba lagi nanti.");
+          throw new Error("Format respon Groq tidak dikenal.");
         }
 
       } catch (error) {
-        await sendTelegram(env.TELEGRAM_BOT_TOKEN, chatId, `❌ Error: ${error.message}`);
+        await sendTelegram(env.TELEGRAM_BOT_TOKEN, chatId, `❌ <b>Error System:</b>\n<code>${error.message}</code>`);
       }
     }
     return new Response("OK");
@@ -63,11 +68,9 @@ export default {
 };
 
 async function sendTelegram(token, chatId, text) {
-  // Telegram limit 4096 karakter
   if (text.length > 4000) text = text.substring(0, 4000) + "... (dipotong)";
-  
   await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: chatId, text: text, parse_mode: "Markdown" })
+    body: JSON.stringify({ chat_id: chatId, text: text, parse_mode: "HTML" })
   });
 }
