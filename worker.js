@@ -12,12 +12,10 @@ export default {
         return new Response("OK");
       }
 
-      // Hapus tag @username
       if (body.message.entities) {
           userText = userText.replace(/@\w+/g, '').trim();
       }
 
-      // Kasih respon "typing..."
       await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendChatAction`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ chat_id: chatId, action: "typing" })
@@ -35,7 +33,6 @@ export default {
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
-            // --- GANTI MODEL KE GPT-OSS-120B ---
             model: "openai/gpt-oss-120b", 
             messages: [
               { role: "system", content: "Kamu adalah asisten AI yang cerdas, santai, dan menjawab pakai bahasa Indonesia gaul. Jawab dengan singkat, padat, dan jelas." },
@@ -47,7 +44,6 @@ export default {
 
         const groqData = await groqResponse.json();
         
-        // Kalau Groq nolak, tampilin errornya
         if (!groqResponse.ok) {
             throw new Error(`Groq API Error: ${JSON.stringify(groqData.error || groqData)}`);
         }
