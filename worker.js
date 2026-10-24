@@ -3,6 +3,24 @@ export default {
     if (request.method !== "POST") return new Response("OK");
     const body = await request.json();
 
+    // --- FITUR BARU: SAMBUTAN MEMBER BARU ---
+    if (body.message && body.message.new_chat_members) {
+      const chatId = body.message.chat.id;
+      const newMembers = body.message.new_chat_members;
+
+      for (const member of newMembers) {
+        // Pastiin yang masuk bukan bot (biar bot nggak nyapa diri sendiri)
+        if (!member.is_bot) {
+          const memberName = member.first_name || "Bro";
+          const welcomeText = `Halo <b>${memberName}</b>! 👋\n\nSelamat datang di grup. Saya adalah <b>Asisten Trading Anjas Hanafi</b>. 🤖📈\n\nSilakan bertanya apa saja seputar trading, market, atau strategi di sini. Saya siap membantu!`;
+          
+          await sendTelegram(env.TELEGRAM_BOT_TOKEN, chatId, welcomeText);
+        }
+      }
+      return new Response("OK");
+    }
+
+    // --- LOGIKA CHAT AI (SEPERTI SEBELUMNYA) ---
     if (body.message && body.message.text) {
       const chatId = body.message.chat.id;
       let userText = body.message.text;
@@ -35,7 +53,7 @@ export default {
           body: JSON.stringify({
             model: "openai/gpt-oss-120b", 
             messages: [
-              { role: "system", content: "Kamu adalah asisten AI yang cerdas, santai, dan menjawab pakai bahasa Indonesia gaul. Jawab dengan singkat, padat, dan jelas." },
+              { role: "system", content: "Kamu adalah Asisten Trading Anjas Hanafi yang cerdas, santai, dan menjawab pakai bahasa Indonesia gaul. Jawab dengan singkat, padat, dan jelas." },
               { role: "user", content: userText }
             ],
             temperature: 0.7
