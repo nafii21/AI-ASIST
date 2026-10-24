@@ -12,7 +12,7 @@ export default {
         // Pastiin yang masuk bukan bot (biar bot nggak nyapa diri sendiri)
         if (!member.is_bot) {
           const memberName = member.first_name || "Bro";
-          const welcomeText = `Halo <b>${memberName}</b>! 👋\n\nSelamat datang di grup. Saya adalah <b>Asisten Trading Anjas Hanafi</b>. 🤖📈\n\nSilakan bertanya apa saja seputar trading, market, atau strategi di sini. Saya siap membantu!`;
+          const welcomeText = `Halo <b>${memberName}</b>! 👋\n\nSelamat datang di grup. Saya adalah <b>Jack</b>, Asisten Trading di sini. 🤖📈\n\nSilakan bertanya apa saja seputar trading, market, atau strategi. Saya siap membantu!`;
           
           await sendTelegram(env.TELEGRAM_BOT_TOKEN, chatId, welcomeText);
         }
@@ -20,13 +20,13 @@ export default {
       return new Response("OK");
     }
 
-    // --- LOGIKA CHAT AI (SEPERTI SEBELUMNYA) ---
+    // --- LOGIKA CHAT AI ---
     if (body.message && body.message.text) {
       const chatId = body.message.chat.id;
       let userText = body.message.text;
 
       if (userText.startsWith("/")) {
-        await sendTelegram(env.TELEGRAM_BOT_TOKEN, chatId, "Halo bro! Gw asisten AI lo. Tanya apa aja langsung di grup ini.");
+        await sendTelegram(env.TELEGRAM_BOT_TOKEN, chatId, "Halo bro! Gw Jack, asisten AI lo. Tanya apa aja langsung di grup ini.");
         return new Response("OK");
       }
 
@@ -53,7 +53,7 @@ export default {
           body: JSON.stringify({
             model: "openai/gpt-oss-120b", 
             messages: [
-              { role: "system", content: "Kamu adalah Asisten Trading Anjas Hanafi yang cerdas, santai, dan menjawab pakai bahasa Indonesia gaul. Jawab dengan singkat, padat, dan jelas." },
+              { role: "system", content: "Kamu adalah Jack, asisten trading AI yang cerdas, santai, dan menjawab pakai bahasa Indonesia gaul. Jawab dengan singkat, padat, dan jelas." },
               { role: "user", content: userText }
             ],
             temperature: 0.7
